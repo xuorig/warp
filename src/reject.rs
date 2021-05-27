@@ -79,6 +79,12 @@ pub(crate) fn missing_cookie(name: &'static str) -> Rejection {
     known(MissingCookie { name })
 }
 
+// 401 Unauthorized
+#[inline]
+pub(crate) fn unauthorized() -> Rejection {
+    known(Unauthorized { _p: () })
+}
+
 // 405 Method Not Allowed
 #[inline]
 pub(crate) fn method_not_allowed() -> Rejection {
@@ -260,6 +266,7 @@ enum_known! {
     MissingConnectionUpgrade(crate::ws::MissingConnectionUpgrade),
     MissingExtension(crate::ext::MissingExtension),
     BodyConsumedMultipleTimes(crate::body::BodyConsumedMultipleTimes),
+    Unauthorized(Unauthorized),
 }
 
 impl Rejection {
@@ -409,6 +416,7 @@ impl Rejections {
                 Known::FileOpenError(_)
                 | Known::MissingExtension(_)
                 | Known::BodyConsumedMultipleTimes(_) => StatusCode::INTERNAL_SERVER_ERROR,
+                Known::Unauthorized(_) => StatusCode::UNAUTHORIZED,
             },
             Rejections::Custom(..) => StatusCode::INTERNAL_SERVER_ERROR,
             Rejections::Combined(ref a, ref b) => preferred(a, b).status(),
@@ -507,6 +515,11 @@ unit_error! {
 unit_error! {
     /// The request's content-type is not supported
     pub UnsupportedMediaType: "The request's content-type is not supported"
+}
+
+unit_error! {
+    /// The request's content-type is not supported
+    pub Unauthorized: "Bad credentials"
 }
 
 /// Missing request header
@@ -698,6 +711,7 @@ mod tests {
             StatusCode::UNSUPPORTED_MEDIA_TYPE
         );
         assert_eq!(custom(Left).status(), StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(unauthorized().status(), StatusCode::UNAUTHORIZED);
     }
 
     #[tokio::test]
